@@ -1,0 +1,11 @@
+include MANIFEST.in
+include setup.py
+include mypy.ini
+include requirements.txt
+include test-requirements.txt
+recursive-include rlock *
+
+global-exclude .coverage
+global-exclude *.egg-info
+global-exclude .pytest_cache
+global-exclude *.py[co]
