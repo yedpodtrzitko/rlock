@@ -10,4 +10,7 @@ run:
 queue:
 	huey_consumer.py rlock.tasker.huey
 
-.PHONY: mypy test run queue
+build:
+	python setup.py sdist
+
+.PHONY: mypy test run queue build

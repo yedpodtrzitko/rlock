@@ -1,5 +1,6 @@
 from huey import RedisHuey, crontab
 
+from .webserver import get_unlock_message
 from .lock import get_lock, Lock, remove_lock, mark_user_notified
 from . import config
 from .slackbot import channel_message, user_message
@@ -23,7 +24,7 @@ def check_channel_expiration(lock: Lock):
 
     if lock.is_expired:
         if not lock.channel_notified:
-            channel_message(lock, '🔓 _unlock_ (expired)')
+            channel_message(lock, get_unlock_message(lock, 'expired'))
 
         remove_lock(lock)
 

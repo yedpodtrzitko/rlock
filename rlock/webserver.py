@@ -6,7 +6,7 @@ from mach9.exceptions import ServerError
 from mach9.response import text, json as json_response
 
 from .slackbot import channel_message
-from .lock import get_lock, Lock, set_lock, remove_lock, extend_lock
+from .lock import get_lock, Lock, set_lock, remove_lock, get_unlock_subscribers
 from . import config
 
 app = Mach9()
@@ -101,11 +101,16 @@ async def rlock(request):
     return do_lock(new_lock, extra_msg)
 
 
+def queue_ping(new_lock: Lock):
+    client.sadd(new_lock.ping_id, new_lock.user_id)
+    return text('Currently locked, I will ping you when the lock will expire.')
+
+
 def do_lock(new_lock: Lock, extra_msg: str = None):
     old_lock = get_lock(new_lock.channel_id)
     if old_lock and not old_lock.is_expired:
         if old_lock.user_id != new_lock.user_id:
-            return text(f'Cant lock - currently locked by <@{old_lock.user_id}>')
+            return queue_ping(new_lock)
 
         if set_lock(new_lock):
             return try_respond(new_lock, f'🔐 _LOCK extended_ {extra_msg or ""}')
@@ -126,7 +131,9 @@ def do_unlock(lock: Lock):
     if not old_lock:
         return text('No lock set')
 
+    print(old_lock.user_id, lock.user_id)
     if old_lock.user_id != lock.user_id:
+        print('cant unlock')
         return text(f'Cant unlock, locked by <@{old_lock.user_id}>')
 
     try:
@@ -134,7 +141,14 @@ def do_unlock(lock: Lock):
     except:
         return text('Failed to unlock, try again')
 
-    return try_respond(lock, f'🔓 _unlock_')
+    return try_respond(lock, get_unlock_message(lock))
+
+
+def get_unlock_message(lock: Lock, extra_msg: str = ''):
+    ping_users = get_unlock_subscribers(lock)
+    slack_names = [f'<@{user}>' for user in ping_users]
+    slack_str = ' '.join(slack_names)
+    return f'🔓 _unlock_ {extra_msg} (cc {slack_str})'
 
 
 @app.route('/dialock', methods={'POST'})
@@ -158,12 +172,12 @@ async def rdialog(request):
 
     action = payload['actions'][0]['value']
     if action == 'lock':
-        do_lock(new_lock)
+        return do_lock(new_lock)
 
     elif action == 'unlock':
-        do_unlock(new_lock)
+        return do_unlock(new_lock)
 
-    return text('done')
+    return text('nothing to do')
 
 
 if __name__ == '__main__':

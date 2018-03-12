@@ -27,6 +27,10 @@ class Lock(NamedTuple):
         return f'{config.CHANNEL_PREFIX}{self.channel_id}'
 
     @property
+    def ping_id(self):
+        return f'{config.PING_PREFIX}{self.channel_id}'
+
+    @property
     def duration(self):
         return int((self.expiry_tstamp - arrow.now().timestamp) / 60)
 
@@ -73,3 +77,13 @@ def mark_user_notified(lock: Lock):
 def extend_lock(lock: Lock, duration: int):
     new_tstamp = arrow.now().shift(minutes=+duration).timestamp
     client.hset(lock.full_id, 'expiry_tstamp', new_tstamp)
+
+
+def get_unlock_subscribers(lock: Lock) -> list:
+    users = []
+    while 1:
+        new: bytes = client.spop(lock.ping_id)
+        if not new:
+            break
+        users.append(new.decode('utf-8'))
+    return users

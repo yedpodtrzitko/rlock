@@ -8,3 +8,4 @@ arrow
 envparse
 redis
 slackclient
+simplejson

@@ -11,6 +11,7 @@ REDIS_DB = 3
 EXPIRY_WARN = 10  # minutes
 
 CHANNEL_PREFIX = 'channel_'  # prefix for redis
+PING_PREFIX = 'ping_'
 SLACK_TESTS = env('SLACK_TESTS', False)  # if False, tests wont touch Slack
 
 

@@ -3,7 +3,7 @@ import json
 import arrow
 import pytest
 
-from ..lock import get_lock
+from ..lock import get_lock, get_unlock_subscribers
 from .conftest import USERID, CHANNEL
 from ..webserver import app
 from .. import tasker
@@ -30,9 +30,12 @@ def test_unlock(owned_redis, req_data):
     assert response.status == 204
 
 
-def test_lock_nonowned(nonowned_redis, req_data):
+def test_lock_nonowned(nonowned_redis, nonowned_lock, req_data):
     request, response = app.test_client.post('/lock', data=req_data)
-    assert response.text.startswith('Cant lock - currently locked by ')
+    assert response.text == 'Currently locked, I will ping you when the lock will expire.'
+
+    lock_subs = get_unlock_subscribers(nonowned_lock)
+    assert lock_subs == [USERID]
 
 
 def test_unlock_nonowned(nonowned_redis, req_data):
