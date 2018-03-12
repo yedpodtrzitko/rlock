@@ -131,9 +131,7 @@ def do_unlock(lock: Lock):
     if not old_lock:
         return text('No lock set')
 
-    print(old_lock.user_id, lock.user_id)
     if old_lock.user_id != lock.user_id:
-        print('cant unlock')
         return text(f'Cant unlock, locked by <@{old_lock.user_id}>')
 
     try:
@@ -147,8 +145,8 @@ def do_unlock(lock: Lock):
 def get_unlock_message(lock: Lock, extra_msg: str = ''):
     ping_users = get_unlock_subscribers(lock)
     slack_names = [f'<@{user}>' for user in ping_users]
-    slack_str = ' '.join(slack_names)
-    return f'🔓 _unlock_ {extra_msg} (cc {slack_str})'
+    slack_str = slack_names and 'cc ' + ' '.join(slack_names) or ''
+    return f'🔓 _unlock_ {extra_msg} {slack_str}'
 
 
 @app.route('/dialock', methods={'POST'})
