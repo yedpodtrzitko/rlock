@@ -24,7 +24,7 @@ def check_channel_expiration(lock: Lock):
 
     if lock.is_expired:
         if not lock.channel_notified:
-            channel_message(lock, get_unlock_message(lock, 'expired'))
+            channel_message(lock, get_unlock_message(lock, '(expired)'))
 
         remove_lock(lock)
 

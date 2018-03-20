@@ -1,6 +1,8 @@
 from typing import NamedTuple, Optional
 
 import arrow
+from mach9.response import text
+
 from . import config
 
 client = config.get_redis()
@@ -79,7 +81,7 @@ def extend_lock(lock: Lock, duration: int):
     client.hset(lock.full_id, 'expiry_tstamp', new_tstamp)
 
 
-def get_unlock_subscribers(lock: Lock) -> list:
+def get_lock_subscribers(lock: Lock) -> list:
     users = []
     while 1:
         new: bytes = client.spop(lock.ping_id)
@@ -87,3 +89,7 @@ def get_unlock_subscribers(lock: Lock) -> list:
             break
         users.append(new.decode('utf-8'))
     return users
+
+
+def add_lock_subscriber(old_lock: Lock, ping_user: str) -> int:
+    return client.sadd(old_lock.ping_id, ping_user)
