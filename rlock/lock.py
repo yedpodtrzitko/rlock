@@ -1,7 +1,6 @@
 from typing import NamedTuple, Optional
 
 import arrow
-from mach9.response import text
 
 from . import config
 
@@ -74,11 +73,6 @@ def remove_lock(lock: Lock):
 
 def mark_user_notified(lock: Lock):
     client.hset(lock.full_id, 'user_notified', 1)
-
-
-def extend_lock(lock: Lock, duration: int):
-    new_tstamp = arrow.now().shift(minutes=+duration).timestamp
-    client.hset(lock.full_id, 'expiry_tstamp', new_tstamp)
 
 
 def get_lock_subscribers(lock: Lock) -> list:

@@ -6,6 +6,7 @@ from .. import config
 
 CHANNEL = 'C1Q1NRYKX'
 USERID = config.SLACK_TESTUSER
+SET_EXPIRY = arrow.now().shift(minutes=(config.EXPIRY_WARN - 1)).timestamp
 
 
 @pytest.fixture
@@ -101,7 +102,7 @@ def owned_lock():
     yield Lock(
         user_id=USERID,
         user_name=USERID * 2,
-        expiry_tstamp=arrow.now().shift(minutes=+(config.EXPIRY_WARN - 1)).timestamp,
+        expiry_tstamp=SET_EXPIRY,
         user_notified=0,
         channel_notified=0,
         channel_id=CHANNEL,
@@ -113,7 +114,7 @@ def nonowned_lock():
     yield Lock(
         user_id=USERID * 2,
         user_name=USERID * 2,
-        expiry_tstamp=arrow.now().shift(minutes=+(config.EXPIRY_WARN - 1)).timestamp,
+        expiry_tstamp=SET_EXPIRY,
         user_notified=0,
         channel_notified=0,
         channel_id=CHANNEL,

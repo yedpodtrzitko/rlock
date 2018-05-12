@@ -12,7 +12,7 @@ def user_message(lock: Lock, **message_data) -> bool:
     )
 
     if not res_json['ok']:
-        return
+        return False
 
     channel = res_json['channel']['id']
 

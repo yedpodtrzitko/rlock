@@ -4,7 +4,7 @@ import arrow
 import pytest
 
 from ..lock import get_lock, add_lock_subscriber, get_lock_subscribers
-from .conftest import USERID, CHANNEL
+from .conftest import USERID, CHANNEL, SET_EXPIRY
 from ..webserver import app, get_unlock_message
 from .. import tasker
 from .. import slackbot
@@ -81,6 +81,7 @@ def test_dialock_extend(owned_redis, owned_lock, dialock_data):
     lock = get_lock(owned_lock.full_id, True)
     assert not lock.user_notified
     assert not lock.is_expiring
+    assert lock.expiry_tstamp == SET_EXPIRY + (30 * 60)
 
 
 def test_dialock_nonowned_unlock(nonowned_redis, nonowned_lock, dialock_data):

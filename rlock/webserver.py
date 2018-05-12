@@ -157,11 +157,18 @@ async def rdialog(request):
     if payload['callback_id'] != 'lock_expiry':
         return text('invalid request')
 
+    channel_id = payload['original_message']['attachments'][0]['fallback']
+    current_lock = get_lock(channel_id)
+    if current_lock:
+        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=30).timestamp
+    else:
+        planned_expiry = arrow.now().shift(minutes=+30).timestamp
+
     new_lock = Lock(
         user_id=payload['user']['id'],
         user_name=payload['user']['name'],
-        channel_id=payload['original_message']['attachments'][0]['fallback'],
-        expiry_tstamp=arrow.now().shift(minutes=+30).timestamp,
+        channel_id=channel_id,
+        expiry_tstamp=planned_expiry,
         user_notified=0,
         channel_notified=0,
     )
