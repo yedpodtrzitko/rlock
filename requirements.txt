@@ -9,3 +9,4 @@ envparse
 redis
 slackclient
 simplejson
+attrs

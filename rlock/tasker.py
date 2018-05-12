@@ -1,9 +1,9 @@
-from huey import RedisHuey, crontab
+from huey import crontab, RedisHuey
 
-from .webserver import get_unlock_message
-from .lock import get_lock, Lock, remove_lock, mark_user_notified
 from . import config
+from .lock import get_lock, Lock, mark_user_notified, remove_lock
 from .slackbot import channel_message, user_message
+from .webserver import get_unlock_message
 
 huey = RedisHuey('rlock', host='localhost')
 

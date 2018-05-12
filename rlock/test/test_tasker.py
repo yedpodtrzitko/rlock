@@ -1,9 +1,6 @@
 import pytest
 
-from .. import slackbot
-from .. import lock
-from .. import webserver
-from .. import tasker
+from .. import lock, slackbot, tasker, webserver
 
 
 @pytest.fixture(autouse=True)

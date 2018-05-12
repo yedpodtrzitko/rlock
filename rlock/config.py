@@ -1,5 +1,5 @@
-from redis import StrictRedis
 from envparse import env
+from redis import StrictRedis
 from slackclient import SlackClient
 
 SLACK_TEAM = env('SLACK_TEAM', '123123')

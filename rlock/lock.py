@@ -1,19 +1,24 @@
-from typing import NamedTuple, Optional
+from typing import Optional
 
 import arrow
+import attr
+from attr import asdict
 
 from . import config
 
 client = config.get_redis()
 
+FIELDS = ['user_id', 'user_name', 'channel_id', 'expiry_tstamp', 'user_notified', 'channel_notified', ]
 
-class Lock(NamedTuple):
-    user_id: str
-    user_name: str
-    channel_id: str
-    expiry_tstamp: int
-    user_notified: int
-    channel_notified: int
+
+@attr.s
+class Lock:
+    user_id: str = attr.ib()
+    user_name: str = attr.ib()
+    channel_id: str = attr.ib()
+    expiry_tstamp: int = attr.ib(default=0)
+    user_notified: int = attr.ib(default=0)
+    channel_notified: int = attr.ib(default=0)
 
     @property
     def is_expired(self):
@@ -41,17 +46,16 @@ def get_lock(channel_id: str, has_prefix: bool = False) -> Optional[Lock]:
     Check & return owner of a lock in channel.
     """
     key_name = channel_id if has_prefix else f'{config.CHANNEL_PREFIX}{channel_id}'
-    fields = Lock._fields
-    vals = client.hmget(key_name, fields)
+    vals = client.hmget(key_name, FIELDS)
     if not any(vals):
         return None
 
-    values = dict(zip(fields, vals))
+    values = dict(zip(FIELDS, vals))
     lock = Lock(
         user_id=values['user_id'] and values['user_id'].decode('utf-8'),
         user_name=values['user_name'] and values['user_name'].decode('utf-8'),
         channel_id=values['channel_id'] and values['channel_id'].decode('utf-8'),
-        expiry_tstamp=int(values['expiry_tstamp'] or 0),
+        expiry_tstamp=int(values['expiry_tstamp']),
         user_notified=int(values['user_notified'] or 0),
         channel_notified=int(values['channel_notified'] or 0),
     )
@@ -64,11 +68,11 @@ def get_lock(channel_id: str, has_prefix: bool = False) -> Optional[Lock]:
 
 
 def set_lock(lock: Lock) -> bool:
-    return client.hmset(lock.full_id, lock._asdict())
+    return client.hmset(lock.full_id, asdict(lock))
 
 
 def remove_lock(lock: Lock):
-    client.hdel(lock.full_id, *lock._fields)
+    client.hdel(lock.full_id, *FIELDS)
 
 
 def mark_user_notified(lock: Lock):

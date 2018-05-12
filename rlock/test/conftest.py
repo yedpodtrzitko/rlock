@@ -1,11 +1,13 @@
 import arrow
+from attr import asdict
 import pytest
 
-from ..webserver import Lock
 from .. import config
+from ..webserver import Lock
 
 CHANNEL = 'C1Q1NRYKX'
 USERID = config.SLACK_TESTUSER
+OTHER_USERID = USERID * 2
 SET_EXPIRY = arrow.now().shift(minutes=(config.EXPIRY_WARN - 1)).timestamp
 
 
@@ -18,7 +20,7 @@ def req_data():
         'channel_id': [CHANNEL],
         'channel_name': ['dev-null'],
         'user_id': [USERID],
-        'user_name': [USERID * 2],
+        'user_name': [OTHER_USERID],
         'command': ['/rlock'],
         'response_url': ['https://vanyli.net'],
         'trigger_id': ['123.123.123'],
@@ -101,10 +103,8 @@ def dialock_data():
 def owned_lock():
     yield Lock(
         user_id=USERID,
-        user_name=USERID * 2,
+        user_name=OTHER_USERID,
         expiry_tstamp=SET_EXPIRY,
-        user_notified=0,
-        channel_notified=0,
         channel_id=CHANNEL,
     )
 
@@ -112,11 +112,9 @@ def owned_lock():
 @pytest.fixture
 def nonowned_lock():
     yield Lock(
-        user_id=USERID * 2,
-        user_name=USERID * 2,
+        user_id=OTHER_USERID,
+        user_name=OTHER_USERID,
         expiry_tstamp=SET_EXPIRY,
-        user_notified=0,
-        channel_notified=0,
         channel_id=CHANNEL,
     )
 
@@ -130,11 +128,11 @@ def clean_redis():
 
 @pytest.fixture
 def owned_redis(clean_redis, owned_lock: Lock):
-    clean_redis.hmset(owned_lock.full_id, owned_lock._asdict())
+    clean_redis.hmset(owned_lock.full_id, asdict(owned_lock))
     yield clean_redis
 
 
 @pytest.fixture
 def nonowned_redis(clean_redis, nonowned_lock: Lock):
-    clean_redis.hmset(nonowned_lock.full_id, nonowned_lock._asdict())
+    clean_redis.hmset(nonowned_lock.full_id, asdict(nonowned_lock))
     yield clean_redis

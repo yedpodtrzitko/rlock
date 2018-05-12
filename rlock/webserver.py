@@ -1,13 +1,15 @@
-from typing import Tuple
 import json
+from typing import Tuple
+
 import arrow
 from mach9 import Mach9
 from mach9.exceptions import ServerError
-from mach9.response import text, json as json_response
+from mach9.response import json as json_response
+from mach9.response import text
 
-from .slackbot import channel_message
-from .lock import get_lock, Lock, set_lock, remove_lock, get_lock_subscribers, add_lock_subscriber
 from . import config
+from .lock import add_lock_subscriber, get_lock, get_lock_subscribers, Lock, remove_lock, set_lock
+from .slackbot import channel_message
 
 app = Mach9()
 
@@ -81,8 +83,6 @@ def extract_request(data: dict) -> Tuple[Lock, list]:
             user_id=data['user_id'][0],
             user_name=data['user_name'][0],
             expiry_tstamp=get_request_duration(params),
-            channel_notified=0,
-            user_notified=0,
         )
     except IndexError:
         raise ServerError('invalid request')
@@ -110,6 +110,7 @@ def do_lock(new_lock: Lock, extra_msg: str = None):
             else:
                 return text('Currently locked, ping already planned.')
 
+        new_lock.expiry_tstamp = get_extension_timestamp(new_lock.channel_id)
         if set_lock(new_lock):
             return try_respond(new_lock, f'🔐 _LOCK extended_ {extra_msg or ""}')
 
@@ -158,19 +159,11 @@ async def rdialog(request):
         return text('invalid request')
 
     channel_id = payload['original_message']['attachments'][0]['fallback']
-    current_lock = get_lock(channel_id)
-    if current_lock:
-        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=30).timestamp
-    else:
-        planned_expiry = arrow.now().shift(minutes=+30).timestamp
-
     new_lock = Lock(
         user_id=payload['user']['id'],
         user_name=payload['user']['name'],
         channel_id=channel_id,
-        expiry_tstamp=planned_expiry,
-        user_notified=0,
-        channel_notified=0,
+        expiry_tstamp=get_extension_timestamp(channel_id),
     )
 
     action = payload['actions'][0]['value']
@@ -181,6 +174,16 @@ async def rdialog(request):
         return do_unlock(new_lock)
 
     return text('nothing to do')
+
+
+def get_extension_timestamp(channel_id: str) -> int:
+    current_lock = get_lock(channel_id)
+    if current_lock:
+        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=30).timestamp
+    else:
+        planned_expiry = arrow.now().shift(minutes=+30).timestamp
+
+    return planned_expiry
 
 
 if __name__ == '__main__':

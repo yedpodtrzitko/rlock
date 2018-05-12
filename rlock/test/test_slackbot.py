@@ -1,9 +1,8 @@
 import pytest
 
-from ..tasker import check_channel_expiration
-from ..slackbot import user_message, channel_message
-
 from .. import config
+from ..slackbot import channel_message, user_message
+from ..tasker import check_channel_expiration
 
 
 @pytest.mark.skipif(config.SLACK_TESTS is False, reason='default tests only')

@@ -1,5 +1,5 @@
-from .lock import Lock
 from . import config
+from .lock import Lock
 
 bot = config.get_slackbot()
 
