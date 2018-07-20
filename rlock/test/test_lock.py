@@ -4,19 +4,19 @@ import arrow
 import pytest
 
 from .. import slackbot, tasker, webserver
-from ..lock import add_lock_subscriber, get_lock, get_lock_subscribers
-from ..webserver import app, get_unlock_message
+from ..lock import get_lock
+from ..webserver import app
 from .conftest import CHANNEL, OTHER_USERID, SET_EXPIRY, USERID
 
 
 @pytest.fixture(autouse=True)
 def no_requests(monkeypatch):
-    monkeypatch.setattr(webserver, "channel_message", lambda *args, **kwargs: True)
-    monkeypatch.setattr(slackbot, "channel_message", lambda *args, **kwargs: True)
-    monkeypatch.setattr(tasker, "channel_message", lambda *args, **kwargs: True)
+    monkeypatch.setattr(webserver, "channel_message", lambda *args, **kwargs: (True, 123))
+    monkeypatch.setattr(slackbot, "channel_message", lambda *args, **kwargs: (True, 123))
+    monkeypatch.setattr(tasker, "channel_message", lambda *args, **kwargs: (True, 123))
 
 
-def test_obtain_lock(req_data):
+def test_obtain_lock(req_data, clean_redis):
     request, response = app.test_client.post('/lock', data=req_data)
     assert response.status == 204
     assert get_lock(CHANNEL).user_id == USERID
@@ -45,8 +45,7 @@ def test_lock_nonowned(nonowned_redis, req_data):
 
     lock = get_lock(CHANNEL)
     assert lock.user_id == OTHER_USERID
-    lock_subs = get_lock_subscribers(lock)
-    assert lock_subs == [USERID]
+    assert lock.get_subscribers() == ['`<@{}>`'.format(USERID)]
 
 
 def test_unlock_nonowned(nonowned_redis, req_data):
@@ -112,8 +111,8 @@ def test_dialock_nonowned_unlock(nonowned_redis, dialock_data):
 
 
 def test_get_unlock_message(owned_redis, owned_lock):
-    add_lock_subscriber(owned_lock, 'foo')
-    add_lock_subscriber(owned_lock, 'bar')
-    message = get_unlock_message(owned_lock)
+    owned_lock.add_new_subscriber('foo')
+    owned_lock.add_new_subscriber('bar')
+    message = owned_lock.get_unlock_message()
     assert '<@foo>' in message
     assert '<@bar>' in message

@@ -103,7 +103,7 @@ def dialock_data():
 def owned_lock():
     yield Lock(
         user_id=USERID,
-        user_name=OTHER_USERID,
+        user_name='yed',
         expiry_tstamp=SET_EXPIRY,
         channel_id=CHANNEL,
     )

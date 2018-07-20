@@ -5,9 +5,9 @@ from .. import lock, slackbot, tasker, webserver
 
 @pytest.fixture(autouse=True)
 def no_requests(monkeypatch):
-    monkeypatch.setattr(webserver, "channel_message", lambda *args, **kwargs: True)
-    monkeypatch.setattr(slackbot, "channel_message", lambda *args, **kwargs: True)
-    monkeypatch.setattr(tasker, "channel_message", lambda *args, **kwargs: True)
+    monkeypatch.setattr(webserver, "channel_message", lambda *args, **kwargs: (True, 123))
+    monkeypatch.setattr(slackbot, "channel_message", lambda *args, **kwargs: (True, 123))
+    monkeypatch.setattr(tasker, "channel_message", lambda *args, **kwargs: (True, 123))
 
 
 def test_notify_upcoming_expiration(owned_redis, owned_lock, mocker):

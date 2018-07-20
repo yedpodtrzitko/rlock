@@ -8,7 +8,7 @@ from mach9.response import json as json_response
 from mach9.response import text
 
 from . import config
-from .lock import add_lock_subscriber, get_lock, get_lock_subscribers, Lock, remove_lock, set_lock
+from .lock import get_lock, Lock, remove_lock, set_lock
 from .slackbot import channel_message
 
 app = Mach9()
@@ -23,7 +23,7 @@ def get_request_duration(params: list) -> int:
     duration = config.LOCK_DURATION
     try:
         duration = abs(int(params[0]))
-    except:
+    except Exception:
         pass
 
     return arrow.now().shift(minutes=+duration).timestamp
@@ -46,21 +46,23 @@ def get_request_message(params: list) -> str:
     return ' '.join(params[offset:])
 
 
-def try_respond(lock: Lock, message: str):
+def try_respond(lock: Lock, message: str, init_lock: bool = False):
     """
     Try to post a message back to the channel.
     If that fails, show message back to the user.
     """
     try:
-        success = channel_message(lock, message)
-    except:
-        success = False
+        success, msg_id = channel_message(lock, message)
+    except Exception:
+        success, msg_id = False, ''
 
     if not success:
         return json_response({
             'response_type': 'in_channel',
             'text': message,
         })
+    elif init_lock:
+        lock.set_message_id(msg_id)
 
     return text(None, status=204)
 
@@ -74,7 +76,7 @@ def extract_request(data: dict) -> Tuple[Lock, list]:
 
     try:
         params = data['text'][0].split()
-    except:
+    except Exception:
         params = []
 
     try:
@@ -101,21 +103,24 @@ async def rlock(request):
     return do_lock(new_lock, extra_msg)
 
 
-def do_lock(new_lock: Lock, extra_msg: str = None):
+def do_lock(new_lock: Lock, extra_msg: str = ''):
     old_lock = get_lock(new_lock.channel_id)
     if old_lock and not old_lock.is_expired:
         if old_lock.user_id != new_lock.user_id:
-            if add_lock_subscriber(old_lock, new_lock.user_id):
+            if old_lock.add_new_subscriber(new_lock.user_id):
                 return text('Currently locked, I will ping you when the lock will expire.')
             else:
-                return text('Currently locked, ping already planned.')
+                return text('Currently locked & ping planned already.')
 
         new_lock.expiry_tstamp = get_extension_timestamp(new_lock.channel_id)
+        new_lock.message_id = old_lock.message_id
+        new_lock.init_tstamp = old_lock.init_tstamp
         if set_lock(new_lock):
+            new_lock.update_lock_message()
             return try_respond(new_lock, f'🔐 _LOCK extended_ {extra_msg or ""}')
 
     if set_lock(new_lock):
-        return try_respond(new_lock, f'🔐 _LOCK_ {extra_msg or ""} ({new_lock.user_name}, {new_lock.duration} mins)')
+        return try_respond(new_lock, new_lock.get_lock_message(extra_msg), init_lock=True)
 
 
 @app.route('/unlock', methods={'POST'})
@@ -138,14 +143,7 @@ def do_unlock(lock: Lock):
     except:
         return text('Failed to unlock, try again')
 
-    return try_respond(lock, get_unlock_message(lock))
-
-
-def get_unlock_message(lock: Lock, extra_msg: str = ''):
-    ping_users = get_lock_subscribers(lock)
-    slack_names = [f'<@{user}>' for user in ping_users]
-    slack_str = slack_names and 'cc ' + ' '.join(slack_names) or ''
-    return f'🔓 _unlock_ {extra_msg} {slack_str}'
+    return try_respond(lock, lock.get_unlock_message())
 
 
 @app.route('/dialock', methods={'POST'})
@@ -187,4 +185,4 @@ def get_extension_timestamp(channel_id: str) -> int:
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=4993, debug=True)
+    app.run(host='127.0.0.1', port=4993, debug=False)

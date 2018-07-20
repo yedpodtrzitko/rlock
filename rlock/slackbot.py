@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 from . import config
 from .lock import Lock
 
@@ -25,11 +27,24 @@ def user_message(lock: Lock, **message_data) -> bool:
     return res['ok']
 
 
-def channel_message(lock: Lock, message: str) -> bool:
+def channel_message(lock: Lock, message: str) -> Tuple[bool, str]:
     res = bot.api_call(
         'chat.postMessage',
         token=bot.token,
         channel=lock.channel_id,
         text=message,
     )
-    return res['ok']
+
+    return res['ok'], res['ts']
+
+
+def update_channel_message(lock: Lock, message: str) -> Tuple[bool, Optional[str]]:
+    res = bot.api_call(
+        'chat.update',
+        token=bot.token,
+        channel=lock.channel_id,
+        text=message,
+        ts=lock.message_id,
+    )
+
+    return res['ok'], lock.message_id
