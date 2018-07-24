@@ -20,7 +20,6 @@ def req_data():
         'channel_id': [CHANNEL],
         'channel_name': ['dev-null'],
         'user_id': [USERID],
-        'user_name': [OTHER_USERID],
         'command': ['/rlock'],
         'response_url': ['https://vanyli.net'],
         'trigger_id': ['123.123.123'],
@@ -103,7 +102,6 @@ def dialock_data():
 def owned_lock():
     yield Lock(
         user_id=USERID,
-        user_name='yed',
         expiry_tstamp=SET_EXPIRY,
         channel_id=CHANNEL,
     )
@@ -113,7 +111,6 @@ def owned_lock():
 def nonowned_lock():
     yield Lock(
         user_id=OTHER_USERID,
-        user_name=OTHER_USERID,
         expiry_tstamp=SET_EXPIRY,
         channel_id=CHANNEL,
     )

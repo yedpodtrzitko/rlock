@@ -8,13 +8,13 @@ from . import config
 
 client = config.get_redis()
 
-FIELDS = ['user_id', 'user_name', 'channel_id', 'expiry_tstamp', 'user_notified', 'channel_notified', 'message_id', 'extra_msg', 'init_tstamp']
+FIELDS = ['user_id', 'channel_id', 'expiry_tstamp', 'user_notified', 'channel_notified', 'message_id', 'extra_msg',
+          'init_tstamp']
 
 
 @attr.s
 class Lock:
     user_id: str = attr.ib()
-    user_name: str = attr.ib()
     channel_id: str = attr.ib()
     expiry_tstamp: int = attr.ib(default=0)
     init_tstamp: int = attr.ib(factory=lambda: arrow.now().timestamp)
@@ -68,7 +68,7 @@ class Lock:
 
     def get_lock_message(self, extra_msg: str = ''):
         slack_str = '' if not self.get_subscribers() else ' '.join(['\nQ:'] + self.get_subscribers())
-        return f'🔐 _LOCK_ {extra_msg} ({self.user_name}, {self.duration} mins) {slack_str}'
+        return f'🔐 _LOCK_ {extra_msg} `<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
     def update_lock_message(self):
         from .slackbot import update_channel_message
@@ -94,7 +94,6 @@ def get_lock(channel_id: str, has_prefix: bool = False) -> Optional[Lock]:
     values = dict(zip(FIELDS, vals))
     lock = Lock(
         user_id=values['user_id'] and values['user_id'].decode('utf-8'),
-        user_name=values['user_name'] and values['user_name'].decode('utf-8'),
         channel_id=values['channel_id'] and values['channel_id'].decode('utf-8'),
         expiry_tstamp=int(values['expiry_tstamp']),
         user_notified=int(values['user_notified'] or 0),

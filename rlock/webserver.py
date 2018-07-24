@@ -83,7 +83,6 @@ def extract_request(data: dict) -> Tuple[Lock, list]:
         lock = Lock(
             channel_id=data['channel_id'][0],
             user_id=data['user_id'][0],
-            user_name=data['user_name'][0],
             expiry_tstamp=get_request_duration(params),
         )
     except IndexError:
@@ -159,7 +158,6 @@ async def rdialog(request):
     channel_id = payload['original_message']['attachments'][0]['fallback']
     new_lock = Lock(
         user_id=payload['user']['id'],
-        user_name=payload['user']['name'],
         channel_id=channel_id,
         expiry_tstamp=get_extension_timestamp(channel_id),
     )
