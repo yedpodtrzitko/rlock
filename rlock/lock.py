@@ -66,9 +66,9 @@ class Lock:
         slack_str = '' if not subscribers else ' '.join(['\ncc'] + subscribers)
         return f'🔓 _unlock_ {extra_msg} {slack_str}'
 
-    def get_lock_message(self, extra_msg: str = ''):
+    def get_lock_message(self):
         slack_str = '' if not self.get_subscribers() else ' '.join(['\nQ:'] + self.get_subscribers())
-        return f'🔐 _LOCK_ {extra_msg} `<@{self.user_id}>`, {self.duration} mins) {slack_str}'
+        return f'🔐 _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
     def update_lock_message(self):
         from .slackbot import update_channel_message
@@ -96,9 +96,11 @@ def get_lock(channel_id: str, has_prefix: bool = False) -> Optional[Lock]:
         user_id=values['user_id'] and values['user_id'].decode('utf-8'),
         channel_id=values['channel_id'] and values['channel_id'].decode('utf-8'),
         expiry_tstamp=int(values['expiry_tstamp']),
+        init_tstamp=int(values.get('init_tstamp') or arrow.now().timestamp),
         user_notified=int(values['user_notified'] or 0),
         channel_notified=int(values['channel_notified'] or 0),
         message_id=values.get('message_id') and values['message_id'].decode('utf-8'),
+        extra_msg=values.get('extra_msg') and values['extra_msg'].decode('utf-8'),
     )
 
     if lock.is_expired and lock.channel_notified:

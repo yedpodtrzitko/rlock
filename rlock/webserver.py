@@ -97,12 +97,11 @@ async def rlock(request):
     Attempt to set a lock in channel.
     """
     new_lock, params = extract_request(request.form)
-    extra_msg = get_request_message(params)
+    new_lock.extra_msg = get_request_message(params)
+    return do_lock(new_lock)
 
-    return do_lock(new_lock, extra_msg)
 
-
-def do_lock(new_lock: Lock, extra_msg: str = ''):
+def do_lock(new_lock: Lock):
     old_lock = get_lock(new_lock.channel_id)
     if old_lock and not old_lock.is_expired:
         if old_lock.user_id != new_lock.user_id:
@@ -114,12 +113,13 @@ def do_lock(new_lock: Lock, extra_msg: str = ''):
         new_lock.expiry_tstamp = get_extension_timestamp(new_lock.channel_id)
         new_lock.message_id = old_lock.message_id
         new_lock.init_tstamp = old_lock.init_tstamp
+        new_lock.extra_msg = old_lock.extra_msg
         if set_lock(new_lock):
             new_lock.update_lock_message()
-            return try_respond(new_lock, f'🔐 _LOCK extended_ {extra_msg or ""}')
+            return try_respond(new_lock, f'🔐 _LOCK extended_')
 
     if set_lock(new_lock):
-        return try_respond(new_lock, new_lock.get_lock_message(extra_msg), init_lock=True)
+        return try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)
 
 
 @app.route('/unlock', methods={'POST'})
@@ -139,7 +139,7 @@ def do_unlock(lock: Lock):
 
     try:
         remove_lock(lock)
-    except:
+    except Exception:
         return text('Failed to unlock, try again')
 
     return try_respond(lock, lock.get_unlock_message())
