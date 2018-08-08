@@ -29,7 +29,7 @@ def check_channel_expiration(lock: Lock):
 
     elif lock.is_expiring and not lock.user_notified:
         message_data = {
-            'text': f'Your lock in <#{lock.channel_id}> will expire in about {lock.duration} minutes',
+            'text': f'Your lock in <#{lock.channel_id}> will expire in about {lock.remaining} minutes',
             'attachments': [
                 {
                     "fallback": lock.channel_id,  # I dont know where to put it

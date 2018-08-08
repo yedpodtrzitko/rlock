@@ -24,6 +24,10 @@ class Lock:
     extra_msg: str = attr.ib(default=None)
 
     @property
+    def remaining(self) -> int:
+        return int((self.expiry_tstamp - arrow.now().timestamp) / 60)
+
+    @property
     def is_expired(self):
         return self.expiry_tstamp < arrow.now().timestamp
 
