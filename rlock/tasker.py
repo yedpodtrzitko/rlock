@@ -2,7 +2,7 @@ from huey import crontab, RedisHuey
 
 from . import config
 from .lock import get_lock, Lock, mark_user_notified, remove_lock
-from .slackbot import channel_message, user_message
+from .slackbot import channel_message
 
 huey = RedisHuey("rlock", host="localhost")
 
@@ -23,28 +23,12 @@ def check_channel_expiration(lock: Lock):
 
     if lock.is_expired:
         if not lock.channel_notified:
-            channel_message(lock, lock.get_unlock_message("(expired)"))
+            lock.update_lock_message(unlock=True)
+            channel_message(lock.channel_id, lock.get_unlock_message("(expired)"))
 
         remove_lock(lock)
 
     elif lock.is_expiring and not lock.user_notified:
-        message_data = {
-            "text": f"Your lock in <#{lock.channel_id}> will expire in about {lock.remaining} minutes",
-            "attachments": [
-                {
-                    "fallback": lock.channel_id,  # I dont know where to put it
-                    "callback_id": "lock_expiry",
-                    "color": "#3AA3E3",
-                    "attachment_type": "default",
-                    "text": "You can do one of the following actions.",
-                    "actions": [
-                        {"name": "action", "text": "Remove lock now", "type": "button", "value": "unlock"},
-                        {"name": "action", "text": "Lock for 30 more minutes", "type": "button", "value": "lock"},
-                        {"name": "action", "text": "Do nothing", "type": "button", "value": "nothing"},
-                    ],
-                }
-            ],
-        }
-
-        if user_message(lock, **message_data):
+        message = f"<@{lock.user_id}>, your lock will expire in about {lock.remaining} minutes."
+        if channel_message(lock.channel_id, message=message, user=lock.user_id):
             mark_user_notified(lock)

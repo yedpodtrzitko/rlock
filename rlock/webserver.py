@@ -52,7 +52,7 @@ def try_respond(lock: Lock, message: str, init_lock: bool = False) -> Tuple[HTTP
     If that fails, show message back to the user.
     """
     try:
-        success, msg_id = channel_message(lock, message)
+        success, msg_id = channel_message(lock.channel_id, message, init_lock=init_lock)
     except Exception:
         success, msg_id = False, ""
 
@@ -136,6 +136,11 @@ def do_unlock(lock: Lock):
         return text(f"Cant unlock, locked by <@{old_lock.user_id}>")
 
     try:
+        old_lock.update_lock_message(unlock=True)
+    except Exception:
+        pass
+
+    try:
         remove_lock(lock)
     except Exception:
         return text("Failed to unlock, try again")
@@ -147,16 +152,23 @@ def do_unlock(lock: Lock):
 async def rdialog(request):
     try:
         payload = json.loads(request.form["payload"][0])
-    except:
+    except Exception:
         return text("failed to parse request")
 
     if payload["callback_id"] != "lock_expiry":
         return text("invalid request")
 
-    channel_id = payload["original_message"]["attachments"][0]["fallback"]
-    new_lock = Lock(
-        user_id=payload["user"]["id"], channel_id=channel_id, expiry_tstamp=get_extension_timestamp(channel_id)
-    )
+    channel_id = payload["channel"]["id"]
+    request_user = payload["user"]["id"]
+
+    new_lock = get_lock(channel_id)
+    if not new_lock:
+        channel_message(channel_id, "chosen lock is not valid anymore", user=request_user)
+        return text(None, status=204)  # no lock exists
+
+    if new_lock.user_id != request_user:
+        channel_message(channel_id, "can't interact with non-owned lock", user=request_user)
+        return text(None, status=204)  # cant interact with non-owned lock
 
     action = payload["actions"][0]["value"]
     if action == "lock":

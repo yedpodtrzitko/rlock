@@ -15,7 +15,7 @@ def test_basic_user_message(owned_lock):
 
 @pytest.mark.skipif(config.SLACK_TESTS is False, reason="default tests only")
 def test_basic_channel_message(owned_lock):
-    channel_message(owned_lock, "🔓 _unlock_ (test)")
+    channel_message(owned_lock.channel_id, "🔓 _unlock_ (test)")
 
 
 @pytest.mark.skipif(config.SLACK_TESTS is False, reason="default tests only")

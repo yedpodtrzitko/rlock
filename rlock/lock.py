@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import arrow
 import attr
@@ -29,7 +29,7 @@ class Lock:
     user_notified: int = attr.ib(default=0)
     channel_notified: int = attr.ib(default=0)
     message_id: Optional[str] = attr.ib(default=None)
-    extra_msg: str = attr.ib(default=None)
+    extra_msg: Optional[str] = attr.ib(default=None)
 
     @property
     def remaining(self) -> int:
@@ -78,14 +78,14 @@ class Lock:
         slack_str = "" if not subscribers else " ".join(["\ncc"] + subscribers)
         return f"🔓 _unlock_ {extra_msg} {slack_str}"
 
-    def get_lock_message(self):
+    def get_lock_message(self) -> str:
         slack_str = "" if not self.get_subscribers() else " ".join(["\nQ:"] + self.get_subscribers())
         return f'🔐 _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
-    def update_lock_message(self):
+    def update_lock_message(self, unlock: bool = False) -> Tuple[bool, Optional[str]]:
         from .slackbot import update_channel_message
 
-        return update_channel_message(self, self.get_lock_message())
+        return update_channel_message(self, self.get_lock_message(), unlock=unlock)
 
     def add_new_subscriber(self, ping_user: str) -> int:
         new_sub = client.sadd(self.ping_id, ping_user)

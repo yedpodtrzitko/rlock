@@ -92,8 +92,8 @@ def test_dialock_nonowned_unlock(nonowned_redis, dialock_data):
     req_data = {"payload": [json.dumps(dialock_data)]}
 
     request, response = app.test_client.post("/dialock", data=req_data)
-    assert response.status == 200
-    assert response.text.startswith("Cant unlock, locked by")
+    assert response.status == 204
+    assert not response.text
     assert get_lock(CHANNEL)
 
 
