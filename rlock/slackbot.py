@@ -27,6 +27,21 @@ def user_message(lock: Lock, **message_data) -> bool:
     return res['ok']
 
 
+def react_message(lock: Lock, message_id: str, reaction: str) -> bool:
+    try:
+        res = bot.api_call(
+            'reactions.add',
+            token=bot.token,
+            channel=lock.channel_id,
+            name=reaction,
+            timestamp=message_id,
+        )
+    except Exception:
+        return False
+
+    return res['ok']
+
+
 def channel_message(lock: Lock, message: str) -> Tuple[bool, str]:
     res = bot.api_call(
         'chat.postMessage',

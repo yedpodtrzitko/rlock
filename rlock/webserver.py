@@ -4,12 +4,12 @@ from typing import Tuple
 import arrow
 from mach9 import Mach9
 from mach9.exceptions import ServerError
-from mach9.response import json as json_response
+from mach9.response import json as json_response, HTTPResponse
 from mach9.response import text
 
 from . import config
 from .lock import get_lock, Lock, remove_lock, set_lock
-from .slackbot import channel_message
+from .slackbot import channel_message, react_message
 
 app = Mach9()
 
@@ -46,7 +46,7 @@ def get_request_message(params: list) -> str:
     return ' '.join(params[offset:])
 
 
-def try_respond(lock: Lock, message: str, init_lock: bool = False):
+def try_respond(lock: Lock, message: str, init_lock: bool = False) -> Tuple[HTTPResponse, str]:
     """
     Try to post a message back to the channel.
     If that fails, show message back to the user.
@@ -60,11 +60,11 @@ def try_respond(lock: Lock, message: str, init_lock: bool = False):
         return json_response({
             'response_type': 'in_channel',
             'text': message,
-        })
+        }), ""
     elif init_lock:
         lock.set_message_id(msg_id)
 
-    return text(None, status=204)
+    return text(None, status=204), msg_id
 
 
 def extract_request(data: dict) -> Tuple[Lock, list]:
@@ -116,10 +116,13 @@ def do_lock(new_lock: Lock):
         new_lock.extra_msg = old_lock.extra_msg
         if set_lock(new_lock):
             new_lock.update_lock_message()
-            return try_respond(new_lock, f'🔐 _LOCK extended_')
+            response, msg_id = try_respond(new_lock, f'🔐 _LOCK extended_')
+            if response:
+                react_message(new_lock, msg_id, 'classic')
+            return response
 
     if set_lock(new_lock):
-        return try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)
+        return try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)[0]
 
 
 @app.route('/unlock', methods={'POST'})
@@ -142,7 +145,7 @@ def do_unlock(lock: Lock):
     except Exception:
         return text('Failed to unlock, try again')
 
-    return try_respond(lock, lock.get_unlock_message())
+    return try_respond(lock, lock.get_unlock_message())[0]
 
 
 @app.route('/dialock', methods={'POST'})
