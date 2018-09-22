@@ -13,4 +13,7 @@ queue:
 build:
 	python setup.py bdist_wheel
 
-.PHONY: mypy test run queue build
+black:
+	black -l 120 --py36 rlock
+
+.PHONY: mypy test run queue build black

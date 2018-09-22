@@ -8,8 +8,16 @@ from . import config
 
 client = config.get_redis()
 
-FIELDS = ['user_id', 'channel_id', 'expiry_tstamp', 'user_notified', 'channel_notified', 'message_id', 'extra_msg',
-          'init_tstamp']
+FIELDS = [
+    "user_id",
+    "channel_id",
+    "expiry_tstamp",
+    "user_notified",
+    "channel_notified",
+    "message_id",
+    "extra_msg",
+    "init_tstamp",
+]
 
 
 @attr.s
@@ -37,11 +45,11 @@ class Lock:
 
     @property
     def full_id(self):
-        return f'{config.CHANNEL_PREFIX}{self.channel_id}'
+        return f"{config.CHANNEL_PREFIX}{self.channel_id}"
 
     @property
     def ping_id(self):
-        return f'{config.PING_PREFIX}{self.channel_id}'
+        return f"{config.PING_PREFIX}{self.channel_id}"
 
     @property
     def duration(self):
@@ -49,12 +57,12 @@ class Lock:
 
     def set_message_id(self, message_id: str):
         self.message_id = message_id
-        client.hset(self.full_id, 'message_id', message_id)
+        client.hset(self.full_id, "message_id", message_id)
 
     def get_subscribers(self, destructive: bool = False) -> list:
         if not destructive:
             users = client.smembers(self.ping_id)
-            return ['`<@{}>`'.format(x.decode('utf-8')) for x in users]
+            return ["`<@{}>`".format(x.decode("utf-8")) for x in users]
 
         users = []
         while 1:
@@ -63,19 +71,20 @@ class Lock:
                 break
             users.append(new)
 
-        return ['<@{}>'.format(x.decode('utf-8')) for x in users]
+        return ["<@{}>".format(x.decode("utf-8")) for x in users]
 
-    def get_unlock_message(self, extra_msg: str = ''):
+    def get_unlock_message(self, extra_msg: str = ""):
         subscribers = self.get_subscribers(destructive=True)
-        slack_str = '' if not subscribers else ' '.join(['\ncc'] + subscribers)
-        return f'🔓 _unlock_ {extra_msg} {slack_str}'
+        slack_str = "" if not subscribers else " ".join(["\ncc"] + subscribers)
+        return f"🔓 _unlock_ {extra_msg} {slack_str}"
 
     def get_lock_message(self):
-        slack_str = '' if not self.get_subscribers() else ' '.join(['\nQ:'] + self.get_subscribers())
+        slack_str = "" if not self.get_subscribers() else " ".join(["\nQ:"] + self.get_subscribers())
         return f'🔐 _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
     def update_lock_message(self):
         from .slackbot import update_channel_message
+
         return update_channel_message(self, self.get_lock_message())
 
     def add_new_subscriber(self, ping_user: str) -> int:
@@ -90,21 +99,21 @@ def get_lock(channel_id: str, has_prefix: bool = False) -> Optional[Lock]:
     """
     Check & return owner of a lock in channel.
     """
-    key_name = channel_id if has_prefix else f'{config.CHANNEL_PREFIX}{channel_id}'
+    key_name = channel_id if has_prefix else f"{config.CHANNEL_PREFIX}{channel_id}"
     vals = client.hmget(key_name, FIELDS)
     if not any(vals):
         return None
 
     values = dict(zip(FIELDS, vals))
     lock = Lock(
-        user_id=values['user_id'] and values['user_id'].decode('utf-8'),
-        channel_id=values['channel_id'] and values['channel_id'].decode('utf-8'),
-        expiry_tstamp=int(values['expiry_tstamp']),
-        init_tstamp=int(values.get('init_tstamp') or arrow.now().timestamp),
-        user_notified=int(values['user_notified'] or 0),
-        channel_notified=int(values['channel_notified'] or 0),
-        message_id=values.get('message_id') and values['message_id'].decode('utf-8'),
-        extra_msg=values.get('extra_msg') and values['extra_msg'].decode('utf-8'),
+        user_id=values["user_id"] and values["user_id"].decode("utf-8"),
+        channel_id=values["channel_id"] and values["channel_id"].decode("utf-8"),
+        expiry_tstamp=int(values["expiry_tstamp"]),
+        init_tstamp=int(values.get("init_tstamp") or arrow.now().timestamp),
+        user_notified=int(values["user_notified"] or 0),
+        channel_notified=int(values["channel_notified"] or 0),
+        message_id=values.get("message_id") and values["message_id"].decode("utf-8"),
+        extra_msg=values.get("extra_msg") and values["extra_msg"].decode("utf-8"),
     )
 
     if lock.is_expired and lock.channel_notified:
@@ -123,4 +132,4 @@ def remove_lock(lock: Lock):
 
 
 def mark_user_notified(lock: Lock):
-    client.hset(lock.full_id, 'user_notified', 1)
+    client.hset(lock.full_id, "user_notified", 1)
