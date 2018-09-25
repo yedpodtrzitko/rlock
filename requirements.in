@@ -1,0 +1,12 @@
+aiohttp
+mach9
+uvicorn
+typing
+requests
+huey
+arrow
+envparse
+redis
+slackclient
+simplejson
+attrs

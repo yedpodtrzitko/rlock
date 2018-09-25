@@ -109,6 +109,7 @@ def do_lock(new_lock: Lock):
         new_lock.message_id = old_lock.message_id
         new_lock.init_tstamp = old_lock.init_tstamp
         new_lock.extra_msg = old_lock.extra_msg
+        new_lock.user_notified = 0
         if set_lock(new_lock):
             new_lock.update_lock_message()
             response, msg_id = try_respond(new_lock, f"🔐 _LOCK extended_")
