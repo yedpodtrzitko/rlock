@@ -1,6 +1,6 @@
 aiohttp
 mach9
-uvicorn
+uvicorn==0.0.15
 typing
 requests
 huey

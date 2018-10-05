@@ -6,7 +6,7 @@ with open(join(dirname(__file__), 'requirements.txt')) as f:
 
 setup(
     name='releaselock',
-    version='0.5.2',
+    version='0.5.5',
     description='Slack App for managing release mutex',
     packages=find_packages(),
     include_package_data=True,

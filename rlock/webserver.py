@@ -105,7 +105,7 @@ def do_lock(new_lock: Lock):
             else:
                 return text("Currently locked & ping planned already.")
 
-        new_lock.expiry_tstamp = get_extension_timestamp(new_lock.channel_id)
+        new_lock.expiry_tstamp = get_extension_timestamp(old_lock)
         new_lock.message_id = old_lock.message_id
         new_lock.init_tstamp = old_lock.init_tstamp
         new_lock.extra_msg = old_lock.extra_msg
@@ -181,10 +181,9 @@ async def rdialog(request):
     return text("nothing to do")
 
 
-def get_extension_timestamp(channel_id: str) -> int:
-    current_lock = get_lock(channel_id)
+def get_extension_timestamp(current_lock: Lock) -> int:
     if current_lock:
-        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=30).timestamp
+        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=+30).timestamp
     else:
         planned_expiry = arrow.now().shift(minutes=+30).timestamp
 
