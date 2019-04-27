@@ -1,6 +1,4 @@
-from collections import defaultdict
-
-from typing import Optional, Tuple, DefaultDict
+from typing import Optional, Tuple
 
 import arrow
 import attr
@@ -10,7 +8,7 @@ from . import config
 
 client = config.get_redis()
 
-FIELDS = [
+LOCK_FIELDS = [
     "user_id",
     "channel_id",
     "expiry_tstamp",
@@ -20,8 +18,6 @@ FIELDS = [
     "extra_msg",
     "init_tstamp",
 ]
-
-LOCK_ICONS = defaultdict(lambda: "🔐")  # type: DefaultDict
 
 
 @attr.s
@@ -84,7 +80,7 @@ class Lock:
 
     def get_lock_message(self) -> str:
         slack_str = "" if not self.get_subscribers() else " ".join(["\nQ:"] + self.get_subscribers())
-        return f'{LOCK_ICONS[self.user_id]} _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
+        return f'{config.LOCK_ICONS[self.user_id]} _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
     def update_lock_message(self, unlock: bool = False) -> Tuple[bool, Optional[str]]:
         from .slackbot import update_channel_message
@@ -104,11 +100,11 @@ def get_lock(channel_id: str, has_prefix: bool = False) -> Optional[Lock]:
     Check & return owner of a lock in channel.
     """
     key_name = channel_id if has_prefix else f"{config.CHANNEL_PREFIX}{channel_id}"
-    vals = client.hmget(key_name, FIELDS)
+    vals = client.hmget(key_name, LOCK_FIELDS)
     if not any(vals):
         return None
 
-    values = dict(zip(FIELDS, vals))
+    values = dict(zip(LOCK_FIELDS, vals))
     lock = Lock(
         user_id=values["user_id"] and values["user_id"].decode("utf-8"),
         channel_id=values["channel_id"] and values["channel_id"].decode("utf-8"),
@@ -132,7 +128,7 @@ def set_lock(lock: Lock) -> bool:
 
 
 def remove_lock(lock: Lock):
-    client.hdel(lock.full_id, *FIELDS)
+    client.hdel(lock.full_id, *LOCK_FIELDS)
 
 
 def mark_user_notified(lock: Lock):

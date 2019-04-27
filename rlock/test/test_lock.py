@@ -3,7 +3,6 @@ import json
 import arrow
 import pytest
 from starlette.requests import Request
-from starlette.types import Scope
 
 from .. import slackbot, tasker, webserver
 from ..lock import get_lock

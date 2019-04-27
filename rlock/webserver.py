@@ -7,11 +7,12 @@ from typing import Tuple, Optional
 import arrow
 import uvicorn
 
+from .channel_stats import get_stats
 from . import config
 from .lock import get_lock, Lock, remove_lock, set_lock
 from .slackbot import channel_message, react_message
 
-app = Starlette(debug=True)
+app = Starlette(debug=False)
 
 client = config.get_redis()
 
@@ -96,6 +97,7 @@ async def rlock(request: Request):
 
 def do_lock(new_lock: Lock, lock_time: Optional[int] = None):
     old_lock = get_lock(new_lock.channel_id)
+    channel_stats = get_stats(new_lock.channel_id)
     if old_lock and not old_lock.is_expired:
         if old_lock.user_id != new_lock.user_id:
             if old_lock.add_new_subscriber(new_lock.user_id):
@@ -103,6 +105,7 @@ def do_lock(new_lock: Lock, lock_time: Optional[int] = None):
             else:
                 return PlainTextResponse("Currently locked & ping planned already.")
 
+        lock_time = lock_time or 30
         new_lock.expiry_tstamp = get_extension_timestamp(old_lock, lock_time)
         new_lock.message_id = old_lock.message_id
         new_lock.init_tstamp = old_lock.init_tstamp
@@ -110,13 +113,17 @@ def do_lock(new_lock: Lock, lock_time: Optional[int] = None):
         new_lock.user_notified = 0
         if set_lock(new_lock):
             new_lock.update_lock_message()
-            response, msg_id = try_respond(new_lock, f"🔐 _LOCK extended_")
-            if response:
+            response, msg_id = try_respond(new_lock, f"🔐 _LOCK extended_ ({lock_time} mins)")
+            if msg_id:
+                channel_stats.mark_extend(save=True)
                 react_message(new_lock, msg_id, "classic")
             return response
 
     if set_lock(new_lock):
-        return try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)[0]
+        response, msg = try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)
+        if msg:  # was success
+            channel_stats.mark_lock(save=True)
+        return response
 
 
 @app.route("/unlock", methods=["POST"])
