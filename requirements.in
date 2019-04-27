@@ -1,6 +1,4 @@
-aiohttp
-mach9
-uvicorn==0.0.15
+uvicorn
 typing
 requests
 huey
@@ -10,3 +8,5 @@ redis
 slackclient
 simplejson
 attrs
+python-multipart
+starlette

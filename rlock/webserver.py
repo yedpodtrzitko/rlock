@@ -1,17 +1,17 @@
 import json
-from typing import Tuple
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import JSONResponse, PlainTextResponse, Response
+from typing import Tuple, Optional
 
 import arrow
-from mach9 import Mach9
-from mach9.exceptions import ServerError
-from mach9.response import json as json_response, HTTPResponse
-from mach9.response import text
+import uvicorn
 
 from . import config
 from .lock import get_lock, Lock, remove_lock, set_lock
 from .slackbot import channel_message, react_message
 
-app = Mach9()
+app = Starlette(debug=True)
 
 client = config.get_redis()
 
@@ -20,11 +20,10 @@ def get_request_duration(params: list) -> int:
     """
     return timestamp when the lock will expiry
     """
-    duration = config.LOCK_DURATION
     try:
         duration = abs(int(params[0]))
     except Exception:
-        pass
+        duration = config.LOCK_DURATION
 
     return arrow.now().shift(minutes=+duration).timestamp
 
@@ -46,7 +45,7 @@ def get_request_message(params: list) -> str:
     return " ".join(params[offset:])
 
 
-def try_respond(lock: Lock, message: str, init_lock: bool = False) -> Tuple[HTTPResponse, str]:
+def try_respond(lock: Lock, message: str, init_lock: bool = False) -> Tuple[Response, str]:
     """
     Try to post a message back to the channel.
     If that fails, show message back to the user.
@@ -57,55 +56,54 @@ def try_respond(lock: Lock, message: str, init_lock: bool = False) -> Tuple[HTTP
         success, msg_id = False, ""
 
     if not success:
-        return json_response({"response_type": "in_channel", "text": message}), ""
+        return JSONResponse({"response_type": "in_channel", "text": message}), ""
     elif init_lock:
         lock.set_message_id(msg_id)
 
-    return text(None, status=204), msg_id
+    return PlainTextResponse(None, status_code=204), msg_id
 
 
 def extract_request(data: dict) -> Tuple[Lock, list]:
     """
     Extract data from the incoming command.
     """
-    if data["team_id"][0] != config.SLACK_TEAM:
-        raise ServerError("invalid team")
+    if data["team_id"] != config.SLACK_TEAM:
+        raise RuntimeError("invalid team")
 
     try:
-        params = data["text"][0].split()
+        params = data["text"].split()
     except Exception:
         params = []
 
     try:
-        lock = Lock(
-            channel_id=data["channel_id"][0], user_id=data["user_id"][0], expiry_tstamp=get_request_duration(params)
-        )
+        lock = Lock(channel_id=data["channel_id"], user_id=data["user_id"], expiry_tstamp=get_request_duration(params))
     except IndexError:
-        raise ServerError("invalid request")
+        raise RuntimeError("invalid request")
 
     return lock, params
 
 
-@app.route("/lock", methods={"POST"})
-async def rlock(request):
+@app.route("/lock", methods=["POST"])
+async def rlock(request: Request):
     """
     Attempt to set a lock in channel.
     """
-    new_lock, params = extract_request(request.form)
+    form_data = await request.form()
+    new_lock, params = extract_request(form_data)
     new_lock.extra_msg = get_request_message(params)
     return do_lock(new_lock)
 
 
-def do_lock(new_lock: Lock):
+def do_lock(new_lock: Lock, lock_time: Optional[int] = None):
     old_lock = get_lock(new_lock.channel_id)
     if old_lock and not old_lock.is_expired:
         if old_lock.user_id != new_lock.user_id:
             if old_lock.add_new_subscriber(new_lock.user_id):
-                return text("Currently locked, I will ping you when the lock will expire.")
+                return PlainTextResponse("Currently locked, I will ping you when the lock will expire.")
             else:
-                return text("Currently locked & ping planned already.")
+                return PlainTextResponse("Currently locked & ping planned already.")
 
-        new_lock.expiry_tstamp = get_extension_timestamp(old_lock)
+        new_lock.expiry_tstamp = get_extension_timestamp(old_lock, lock_time)
         new_lock.message_id = old_lock.message_id
         new_lock.init_tstamp = old_lock.init_tstamp
         new_lock.extra_msg = old_lock.extra_msg
@@ -121,9 +119,10 @@ def do_lock(new_lock: Lock):
         return try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)[0]
 
 
-@app.route("/unlock", methods={"POST"})
-async def runlock(request):
-    new_lock, params = extract_request(request.form)
+@app.route("/unlock", methods=["POST"])
+async def runlock(request: Request) -> Response:
+    form_data = await request.form()
+    new_lock, params = extract_request(form_data)
 
     return do_unlock(new_lock)
 
@@ -131,10 +130,10 @@ async def runlock(request):
 def do_unlock(lock: Lock):
     old_lock = get_lock(lock.channel_id)
     if not old_lock:
-        return text("No lock set")
+        return PlainTextResponse("No lock set")
 
     if old_lock.user_id != lock.user_id:
-        return text(f"Cant unlock, locked by <@{old_lock.user_id}>")
+        return PlainTextResponse(f"Cant unlock, locked by <@{old_lock.user_id}>")
 
     try:
         old_lock.update_lock_message(unlock=True)
@@ -144,20 +143,21 @@ def do_unlock(lock: Lock):
     try:
         remove_lock(lock)
     except Exception:
-        return text("Failed to unlock, try again")
+        return PlainTextResponse("Failed to unlock, try again")
 
     return try_respond(lock, lock.get_unlock_message())[0]
 
 
-@app.route("/dialock", methods={"POST"})
+@app.route("/dialock", methods=["POST"])
 async def rdialog(request):
     try:
-        payload = json.loads(request.form["payload"][0])
+        form_data = await request.form()
+        payload = json.loads(form_data["payload"])
     except Exception:
-        return text("failed to parse request")
+        raise RuntimeError("failed to parse request")
 
     if payload["callback_id"] != "lock_expiry":
-        return text("invalid request")
+        return PlainTextResponse("invalid request")
 
     channel_id = payload["channel"]["id"]
     request_user = payload["user"]["id"]
@@ -165,30 +165,42 @@ async def rdialog(request):
     new_lock = get_lock(channel_id)
     if not new_lock:
         channel_message(channel_id, "chosen lock is not valid anymore", user=request_user)
-        return text(None, status=204)  # no lock exists
+        return PlainTextResponse(None, status_code=204)  # no lock exists
 
     if new_lock.user_id != request_user:
         channel_message(channel_id, "can't interact with non-owned lock", user=request_user)
-        return text(None, status=204)  # cant interact with non-owned lock
+        return PlainTextResponse(None, status_code=204)  # cant interact with non-owned lock
 
     action = payload["actions"][0]["value"]
-    if action == "lock":
-        return do_lock(new_lock)
+    if action.startswith("lock"):
+        try:
+            action, _, lock_time = action.partition("_")
+            lock_time = int(lock_time)
+        except Exception:
+            lock_time = None
+
+        return do_lock(new_lock, lock_time)
 
     elif action == "unlock":
         return do_unlock(new_lock)
 
-    return text("nothing to do")
+    return PlainTextResponse("nothing to do")
 
 
-def get_extension_timestamp(current_lock: Lock) -> int:
+@app.exception_handler(500)
+async def server_error(request, exc):
+    return PlainTextResponse("something went wrong", status_code=500)
+
+
+def get_extension_timestamp(current_lock: Lock, lock_time: Optional[int] = None) -> int:
+    lock_time = lock_time or 30
     if current_lock:
-        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=+30).timestamp
+        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=lock_time).timestamp
     else:
-        planned_expiry = arrow.now().shift(minutes=+30).timestamp
+        planned_expiry = arrow.now().shift(minutes=lock_time).timestamp
 
     return planned_expiry
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=4993, debug=False)
+    uvicorn.run(app, host="0.0.0.0", port=4993)

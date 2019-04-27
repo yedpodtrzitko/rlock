@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from collections import defaultdict
+
+from typing import Optional, Tuple, DefaultDict
 
 import arrow
 import attr
@@ -18,6 +20,8 @@ FIELDS = [
     "extra_msg",
     "init_tstamp",
 ]
+
+LOCK_ICONS = defaultdict(lambda: "🔐")  # type: DefaultDict
 
 
 @attr.s
@@ -80,7 +84,7 @@ class Lock:
 
     def get_lock_message(self) -> str:
         slack_str = "" if not self.get_subscribers() else " ".join(["\nQ:"] + self.get_subscribers())
-        return f'🔐 _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
+        return f'{LOCK_ICONS[self.user_id]} _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
     def update_lock_message(self, unlock: bool = False) -> Tuple[bool, Optional[str]]:
         from .slackbot import update_channel_message
