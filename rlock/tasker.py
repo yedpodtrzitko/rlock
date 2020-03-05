@@ -9,11 +9,12 @@ huey = RedisHuey("rlock", host="localhost")
 
 client = config.get_redis()
 
-#@huey.periodic_task(crontab(hour=17, minute=00))  # UTC
+# @huey.periodic_task(crontab(hour=17, minute=00))  # UTC
 def check_daily_stats():
     keys = client.keys(f"{config.CHANNEL_STATS_PREFIX}*")
     for channel in keys:
         check_channel_stats(channel.decode("utf-8"))
+
 
 @huey.periodic_task(crontab(minute="*"))
 def check_expirations():
@@ -45,4 +46,3 @@ def check_channel_stats(channel_key: str):
     stats = get_stats(channel_id)
     if stats.is_today and stats.locks_count:
         print_stats(stats)
-

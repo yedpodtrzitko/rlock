@@ -51,7 +51,14 @@ def dialock_data():
                     "fallback": "buttons for /rlock /runlock actions",
                     "id": 1,
                     "actions": [
-                        {"id": "1", "name": "lock", "text": "Extend", "type": "button", "value": "lock", "style": ""},
+                        {
+                            "id": "1",
+                            "name": "lock",
+                            "text": "Extend",
+                            "type": "button",
+                            "value": "lock",
+                            "style": "",
+                        },
                         {
                             "id": "2",
                             "name": "unlock",

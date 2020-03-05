@@ -11,8 +11,12 @@ from .conftest import CHANNEL, OTHER_USERID, SET_EXPIRY, USERID
 
 @pytest.fixture(autouse=True)
 def no_requests(monkeypatch):
-    monkeypatch.setattr(webserver, "channel_message", lambda *args, **kwargs: (True, 123))
-    monkeypatch.setattr(slackbot, "channel_message", lambda *args, **kwargs: (True, 123))
+    monkeypatch.setattr(
+        webserver, "channel_message", lambda *args, **kwargs: (True, 123)
+    )
+    monkeypatch.setattr(
+        slackbot, "channel_message", lambda *args, **kwargs: (True, 123)
+    )
     monkeypatch.setattr(tasker, "channel_message", lambda *args, **kwargs: (True, 123))
 
 
@@ -41,7 +45,9 @@ def test_unlock(owned_redis, req_data):
 
 def test_lock_nonowned(nonowned_redis, req_data):
     request, response = app.test_client.post("/lock", data=req_data)
-    assert response.text == "Currently locked, I will ping you when the lock will expire."
+    assert (
+        response.text == "Currently locked, I will ping you when the lock will expire."
+    )
 
     lock = get_lock(CHANNEL)
     assert lock.user_id == OTHER_USERID
@@ -55,7 +61,11 @@ def test_unlock_nonowned(nonowned_redis, req_data):
 
 def test_overwrite_expired_lock(clean_redis, req_data):
     clean_redis.hmset(
-        f"channel_{CHANNEL}", {"user_id": OTHER_USERID, "expiry_tstamp": arrow.now().shift(minutes=-1).timestamp}
+        f"channel_{CHANNEL}",
+        {
+            "user_id": OTHER_USERID,
+            "expiry_tstamp": arrow.now().shift(minutes=-1).timestamp,
+        },
     )
 
     request, response = app.test_client.post("/lock", data=req_data)

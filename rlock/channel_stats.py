@@ -11,12 +11,12 @@ from . import config
 client = config.get_redis()
 
 STATS_FIELDS = [
-    'channel_id',
-    'created_tstamp',
-    'locks_count',
-    'extends_count',
-    'lock_minutes',
-    'longest_lock',
+    "channel_id",
+    "created_tstamp",
+    "locks_count",
+    "extends_count",
+    "lock_minutes",
+    "longest_lock",
 ]
 
 
@@ -82,11 +82,13 @@ def get_stats(channel_id: str) -> ChannelStats:
 
 
 def print_stats(stats: ChannelStats) -> Tuple[bool, str]:
-    message = "\n".join([
-        "Hello yes, see today stats:",
-        f"number of locks: {stats.locks_count}",
-        f"number of lock extends: {stats.extends_count}",
-    ])
+    message = "\n".join(
+        [
+            "Hello yes, see today stats:",
+            f"number of locks: {stats.locks_count}",
+            f"number of lock extends: {stats.extends_count}",
+        ]
+    )
     return channel_message(stats.channel_id, message)
 
 
