@@ -6,7 +6,7 @@ from slackclient import SlackClient
 from typing import DefaultDict
 
 SLACK_TEAM = env("SLACK_TEAM", "123123")
-SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN")
+SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN", "")
 SLACK_TESTUSER = env("SLACK_TESTUSER", "234234")
 
 LOCK_DURATION = 50  # minutes
