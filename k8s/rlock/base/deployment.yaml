@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rlock
+spec:
+  strategy:    
+    type: Recreate
+  progressDeadlineSeconds: 120
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      name: rlock
+  template:
+    metadata:
+      labels:
+        name: rlock
+    spec:
+      terminationGracePeriodSeconds: 35
+      containers:
+      - name: app
+        image: $KUSTOMIZE_NEW_IMAGE
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: "500M"
+            cpu: "500m"
+          limits:
+            memory: "700M"
+            cpu: "700m"
+        envFrom:
+        - configMapRef:
+            name: rlock
+        - secretRef:
+            name: rlock-secrets
+        ports:
+        - containerPort: 4993
+      imagePullSecrets:
+      - name: gitlab

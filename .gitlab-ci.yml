@@ -2,6 +2,7 @@ stages:
   - analyze
   - build
   - test
+  - deploy
 
 image: docker-stable
 
@@ -12,6 +13,7 @@ include:
   - https://ci-files.skypicker.com/templates/build/black.yml
   - https://ci-files.skypicker.com/templates/test/pytest.yml
   - https://ci-files.skypicker.com/templates/build/kaniko.yml
+  - https://ci-files.skypicker.com/tags/gke_k8s_deploy_v2/deploy/.gke_k8s_deploy.yml
 
 black:
   stage: analyze
@@ -23,3 +25,16 @@ pytest:
 
 container:
   extends: .kaniko-build
+
+production:
+  extends: .gke_k8s_deploy
+  stage: deploy
+  variables:
+    KUSTOMIZE_K8S_DIR: "./k8s"
+    KUSTOMIZE_OVERLAY_NAME: "production"
+  before_script:
+    - kubectl delete jobs --all
+  environment:
+    name: rlock-prod
+  only:
+    - master
