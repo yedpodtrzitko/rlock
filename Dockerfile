@@ -7,7 +7,6 @@ RUN apk add --no-cache --virtual=.build build-base && \
     pip install -r requirements.txt && \
     apk del .build
 
-COPY rlock ./
+COPY rlock ./rlock
 
 CMD ["uvicorn", "server:app"]
-

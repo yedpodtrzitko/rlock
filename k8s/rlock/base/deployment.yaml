@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: rlock
 spec:
-  strategy:    
+  strategy:
     type: Recreate
   progressDeadlineSeconds: 120
   revisionHistoryLimit: 3
