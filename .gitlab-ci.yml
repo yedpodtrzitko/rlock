@@ -1,0 +1,25 @@
+stages:
+  - analyze
+  - build
+  - test
+
+image: docker-stable
+
+variables:
+  PYTEST_COVERAGE_TARGET: rlock/test
+
+include:
+  - https://ci-files.skypicker.com/templates/build/black.yml
+  - https://ci-files.skypicker.com/templates/test/pytest.yml
+  - https://ci-files.skypicker.com/templates/build/kaniko.yml
+
+black:
+  stage: analyze
+
+pytest:
+  before_script:
+    - apk add --no-cache build-base
+    - pip install -r test-requirements.txt
+
+container:
+  extends: .kaniko-build
