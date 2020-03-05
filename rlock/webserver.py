@@ -211,3 +211,4 @@ def get_extension_timestamp(current_lock: Lock, lock_time: Optional[int] = None)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=4993)
+

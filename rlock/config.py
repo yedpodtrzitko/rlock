@@ -20,6 +20,8 @@ SLACK_TESTS = env("SLACK_TESTS", False)  # if False, tests wont touch Slack
 
 LOCK_ICONS = defaultdict(lambda: "🔐")  # type: DefaultDict
 
+LOCK_ICONS.update({"U666KD6AX": ":tin_thinking:"})  # tin
+
 
 def get_redis():
     return StrictRedis(db=REDIS_DB)
