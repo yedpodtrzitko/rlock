@@ -1,4 +1,4 @@
-FROM python:3.7-alpine
+FROM python:3.8-alpine
 
 WORKDIR /app
 COPY requirements.txt ./
@@ -9,4 +9,4 @@ RUN apk add --no-cache --virtual=.build build-base && \
 
 COPY rlock ./rlock
 
-CMD ["uvicorn", "server:app"]
+CMD ["uvicorn", "webserver:app"]
