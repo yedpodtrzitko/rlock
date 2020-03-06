@@ -9,4 +9,4 @@ RUN apk add --no-cache --virtual=.build build-base && \
 
 COPY rlock ./rlock
 
-CMD ["uvicorn", "webserver:app"]
+CMD ["uvicorn", "rlock.webserver:app"]
