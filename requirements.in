@@ -5,7 +5,7 @@ huey
 arrow
 envparse
 redis
-slackclient
+slackclient<2.0.0
 simplejson
 attrs
 python-multipart
