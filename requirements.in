@@ -4,7 +4,7 @@ requests
 huey
 arrow
 envparse
-redis
+redis<3.0.0
 slackclient<2.0.0
 simplejson
 attrs

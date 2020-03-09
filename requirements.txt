@@ -16,7 +16,7 @@ huey==2.2.0
 idna==2.9                 # via requests
 python-dateutil==2.8.1    # via arrow
 python-multipart==0.0.5
-redis==3.4.1
+redis==2.10.6
 requests==2.23.0
 simplejson==3.17.0
 six==1.14.0               # via python-dateutil, python-multipart, slackclient, websocket-client
