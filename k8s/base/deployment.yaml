@@ -33,7 +33,7 @@ spec:
         - secretRef:
             name: rlock-secrets
         ports:
-        - containerPort: 4993
+        - containerPort: 8000
       imagePullSecrets:
       - name: gitlab
 ---
