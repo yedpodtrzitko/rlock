@@ -186,12 +186,14 @@ async def rdialog(request):
         channel_message(
             channel_id, "chosen lock is not valid anymore", user=request_user
         )
+        print("first")
         return PlainTextResponse(None, status_code=204)  # no lock exists
 
     if new_lock.user_id != request_user:
         channel_message(
             channel_id, "can't interact with non-owned lock", user=request_user
         )
+        print("second", new_lock.user_id, request_user)
         return PlainTextResponse(
             None, status_code=204
         )  # cant interact with non-owned lock

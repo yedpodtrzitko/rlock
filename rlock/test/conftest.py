@@ -1,14 +1,20 @@
 import arrow
 from attr import asdict
+from starlette.testclient import TestClient
 import pytest
 
 from .. import config
-from ..webserver import Lock
+from ..webserver import app, Lock
 
 CHANNEL = "C1Q1NRYKX"
 USERID = config.SLACK_TESTUSER
 OTHER_USERID = USERID * 2
 SET_EXPIRY = arrow.now().shift(minutes=(config.EXPIRY_WARN - 1)).timestamp
+
+
+@pytest.fixture
+def test_client():
+    return TestClient(app)
 
 
 @pytest.fixture

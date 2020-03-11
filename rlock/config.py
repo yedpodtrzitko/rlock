@@ -7,7 +7,7 @@ from typing import DefaultDict
 
 SLACK_TEAM = env("SLACK_TEAM", "team")
 SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN", "token")
-SLACK_TESTUSER = env("SLACK_TESTUSER", "user")
+SLACK_TESTUSER = env("SLACK_TESTUSER", "U40L9UPKK")
 
 REDIS_DB = env("REDIS_DB", "redis://redis/0")
 LOCK_DURATION = 50  # minutes
