@@ -7,3 +7,4 @@ namespace: rlock
 # patch the resources from base folder
 patches:
   - replica_count.yaml
+  - resources.yaml
