@@ -9,11 +9,17 @@ image: docker-stable
 variables:
   PYTEST_COVERAGE_TARGET: .
 
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
 include:
-  - https://ci-files.skypicker.com/templates/build/black.yml
-  - https://ci-files.skypicker.com/templates/test/pytest.yml
-  - https://ci-files.skypicker.com/templates/build/kaniko.yml
-  - https://ci-files.skypicker.com/tags/gke_k8s_deploy_v2/deploy/.gke_k8s_deploy.yml
+  - https://ci-files.skypicker.com/templates/v2/format/black.yml
+  - https://ci-files.skypicker.com/templates/v2/format/style.commit.yml
+  - https://ci-files.skypicker.com/templates/v2/test/pytest.yml
+  - https://ci-files.skypicker.com/templates/v2/build/kaniko.yml
+  - https://ci-files.skypicker.com/templates/v2/release/k8s.gke.src.yml
 
 black:
   stage: analyze
@@ -27,11 +33,8 @@ pytest:
     - pip install -r test-requirements.txt
     - cd rlock
 
-container:
-  extends: .kaniko-build
-
 production:
-  extends: .gke_k8s_deploy
+  extends: .k8s-gke-deploy
   stage: deploy
   variables:
     KUSTOMIZE_K8S_DIR: "./k8s"
@@ -40,5 +43,7 @@ production:
     - kubectl delete jobs --all
   environment:
     name: rlock-prod
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+    - when: never
