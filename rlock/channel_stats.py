@@ -10,7 +10,14 @@ from . import config
 
 client = config.get_redis()
 
-STATS_FIELDS = ["channel_id", "created_tstamp", "locks_count", "extends_count", "lock_minutes", "longest_lock"]
+STATS_FIELDS = [
+    "channel_id",
+    "created_tstamp",
+    "locks_count",
+    "extends_count",
+    "lock_minutes",
+    "longest_lock",
+]
 
 
 @attr.s

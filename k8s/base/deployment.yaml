@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rlock
+spec:
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 120
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      name: rlock
+  template:
+    metadata:
+      labels:
+        name: rlock
+    spec:
+      terminationGracePeriodSeconds: 35
+      containers:
+        - name: tasker
+          image: $KUSTOMIZE_NEW_IMAGE
+          imagePullPolicy: IfNotPresent
+          command: ["huey_consumer.py"]
+          args: ["rlock.tasker.huey"]
+          resources:
+            requests:
+              memory: "250M"
+              cpu: "150m"
+            limits:
+              memory: "300M"
+              cpu: "250m"
+          envFrom:
+            - configMapRef:
+                name: rlock
+            - secretRef:
+                name: rlock-secrets
+          ports:
+            - containerPort: 8000
+        - name: app
+          image: $KUSTOMIZE_NEW_IMAGE
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "500M"
+              cpu: "500m"
+            limits:
+              memory: "700M"
+              cpu: "700m"
+          envFrom:
+            - configMapRef:
+                name: rlock
+            - secretRef:
+                name: rlock-secrets
+          ports:
+            - containerPort: 8000
+      imagePullSecrets:
+        - name: gitlab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 120
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      name: redis
+  template:
+    metadata:
+      labels:
+        name: redis
+    spec:
+      terminationGracePeriodSeconds: 35
+      containers:
+        - name: app
+          image: redis
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "150M"
+              cpu: "50m"
+            limits:
+              memory: "250M"
+              cpu: "250m"
+          envFrom:
+          ports:
+            - containerPort: 6379

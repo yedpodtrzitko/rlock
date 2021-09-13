@@ -5,12 +5,11 @@ from . import config
 from .lock import get_lock, Lock, mark_user_notified, remove_lock
 from .slackbot import channel_message
 
-huey = RedisHuey("rlock", host="localhost")
+huey = RedisHuey("rlock", url=config.REDIS_DB)
 
 client = config.get_redis()
 
-
-@huey.periodic_task(crontab(hour=17, minute=00))  # UTC
+# @huey.periodic_task(crontab(hour=17, minute=00))  # UTC
 def check_daily_stats():
     keys = client.keys(f"{config.CHANNEL_STATS_PREFIX}*")
     for channel in keys:

@@ -1,9 +1,10 @@
 import arrow
 from attr import asdict
+from starlette.testclient import TestClient
 import pytest
 
 from .. import config
-from ..webserver import Lock
+from ..webserver import app, Lock
 
 CHANNEL = "C1Q1NRYKX"
 USERID = config.SLACK_TESTUSER
@@ -12,19 +13,23 @@ SET_EXPIRY = arrow.now().shift(minutes=(config.EXPIRY_WARN - 1)).timestamp
 
 
 @pytest.fixture
+def test_client():
+    return TestClient(app)
+
+
+@pytest.fixture
 def req_data():
     return {
-        "token": "---",
-        "team_id": config.SLACK_TEAM,
-        "team_domain": "skypicker",
-        "channel_id": CHANNEL,
-        "channel_name": "dev-null",
-        "user_id": USERID,
-        "user_name": "yed",
-        "command": "/rlock",
-        "text": "30 foo",
-        "response_url": "https://hooks.slack.com/commands/",
-        "trigger_id": "608928610888.2169119111.2169119111",
+        "token": ["---"],
+        "team_id": [config.SLACK_TEAM],
+        "team_domain": ["foobar"],
+        "channel_id": [CHANNEL],
+        "channel_name": ["dev-null"],
+        "user_id": [USERID],
+        "command": ["/rlock"],
+        "response_url": ["https://vanyli.net"],
+        "trigger_id": ["123.123.123"],
+        "text": ["30 foo"],
     }
 
 
@@ -52,15 +57,21 @@ def dialock_data():
                     "fallback": "buttons for /rlock /runlock actions",
                     "id": 1,
                     "actions": [
-                        {"id": "1", "name": "lock", "text": "+20", "type": "button", "value": "lock_20", "style": ""},
-                        {"id": "2", "name": "lock", "text": "+40", "type": "button", "value": "lock_40", "style": ""},
                         {
-                            "id": "3",
+                            "id": "1",
+                            "name": "lock",
+                            "text": "Extend",
+                            "type": "button",
+                            "value": "lock",
+                            "style": "",
+                        },
+                        {
+                            "id": "2",
                             "name": "unlock",
                             "text": "Unlock",
                             "type": "button",
                             "value": "unlock",
-                            "style": "primary",
+                            "style": "",
                         },
                     ],
                 }

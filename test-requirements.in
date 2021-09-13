@@ -1,0 +1,6 @@
+black
+mypy
+pytest
+pytest-cov
+pytest-mock
+

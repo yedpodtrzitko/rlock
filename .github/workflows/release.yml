@@ -1,0 +1,33 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  container:
+    name: Container image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: GitHub Package Registry
+        uses: aevea/action-kaniko@master
+        with:
+          registry: docker.pkg.github.com
+          password: ${{ secrets.GITHUB_TOKEN }}
+          image: service
+          cache: true
+          cache_registry: cache
+
+  release-notes:
+    name: Release Notes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Generate changelog
+        uses: docker://aevea/release-notary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

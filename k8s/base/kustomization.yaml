@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# add common annotations (app.gitlab.com/ are for Deploy Boards)
+commonAnnotations:
+  app.gitlab.com/env: $CI_ENVIRONMENT_SLUG
+  app.gitlab.com/app: $CI_PROJECT_PATH_SLUG
+  app.kiwi.com/project-id: ID_$CI_PROJECT_ID
+  app.kiwi.com/project-url: $CI_PROJECT_URL
+  app.kiwi.com/deploy-by: $GITLAB_USER_EMAIL
+  app.kiwi.com/deploy-ci-job: $CI_JOB_URL
+
+# add resources
+resources:
+- svc.yaml
+- deployment.yaml
+- configmap.yaml

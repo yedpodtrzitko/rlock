@@ -79,7 +79,11 @@ class Lock:
         return f"🔓 _unlock_ {extra_msg} {slack_str}"
 
     def get_lock_message(self) -> str:
-        slack_str = "" if not self.get_subscribers() else " ".join(["\nQ:"] + self.get_subscribers())
+        slack_str = (
+            ""
+            if not self.get_subscribers()
+            else " ".join(["\nQ:"] + self.get_subscribers())
+        )
         return f'{config.LOCK_ICONS[self.user_id]} _LOCK_ {self.extra_msg or ""} (`<@{self.user_id}>`, {self.duration} mins) {slack_str}'
 
     def update_lock_message(self, unlock: bool = False) -> Tuple[bool, Optional[str]]:

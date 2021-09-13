@@ -5,12 +5,12 @@ from redis import StrictRedis
 from slackclient import SlackClient
 from typing import DefaultDict
 
-SLACK_TEAM = env("SLACK_TEAM", "123123")
-SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN")
-SLACK_TESTUSER = env("SLACK_TESTUSER", "234234")
+SLACK_TEAM = env("SLACK_TEAM", "team")
+SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN", "token")
+SLACK_TESTUSER = env("SLACK_TESTUSER", "U40L9UPKK")
 
+REDIS_DB = env("REDIS_DB", "redis://redis/0")
 LOCK_DURATION = 50  # minutes
-REDIS_DB = 3
 EXPIRY_WARN = 10  # minutes
 
 CHANNEL_PREFIX = "channel_lock_"  # prefix for redis
@@ -20,9 +20,11 @@ SLACK_TESTS = env("SLACK_TESTS", False)  # if False, tests wont touch Slack
 
 LOCK_ICONS = defaultdict(lambda: "🔐")  # type: DefaultDict
 
+LOCK_ICONS.update({"U666KD6AX": ":tin_thinking:"})  # tin
+
 
 def get_redis():
-    return StrictRedis(db=REDIS_DB)
+    return StrictRedis.from_url(REDIS_DB)
 
 
 def get_slackbot():

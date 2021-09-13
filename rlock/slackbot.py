@@ -20,7 +20,12 @@ def user_message(lock: Lock, **message_data) -> bool:
 
 def react_message(lock: Lock, message_id: str, reaction: str) -> bool:
     try:
-        res = bot.api_call("reactions.add", channel=lock.channel_id, name=reaction, timestamp=message_id)
+        res = bot.api_call(
+            "reactions.add",
+            channel=lock.channel_id,
+            name=reaction,
+            timestamp=message_id,
+        )
     except Exception:
         return False
 
@@ -37,9 +42,25 @@ def channel_message(
                 "fallback": "buttons for /rlock /runlock actions",
                 "callback_id": "lock_expiry",
                 "actions": [
-                    {"name": "lock", "text": "+20", "type": "button", "value": "lock_20"},
-                    {"name": "lock", "text": "+40", "type": "button", "value": "lock_40"},
-                    {"name": "unlock", "text": "Unlock", "type": "button", "value": "unlock", "style": "primary"},
+                    {
+                        "name": "lock",
+                        "text": "+20",
+                        "type": "button",
+                        "value": "lock_20",
+                    },
+                    {
+                        "name": "lock",
+                        "text": "+40",
+                        "type": "button",
+                        "value": "lock_40",
+                    },
+                    {
+                        "name": "unlock",
+                        "text": "Unlock",
+                        "type": "button",
+                        "value": "unlock",
+                        "style": "primary",
+                    },
                 ],
             }
         ]
@@ -47,17 +68,38 @@ def channel_message(
         attachments = None
 
     if user:
-        res = bot.api_call("chat.postEphemeral", channel=channel_id, text=message, attachments=attachments, user=user)
+        res = bot.api_call(
+            "chat.postEphemeral",
+            channel=channel_id,
+            text=message,
+            attachments=attachments,
+            user=user,
+        )
     else:
-        res = bot.api_call("chat.postMessage", channel=channel_id, text=message, attachments=attachments)
+        res = bot.api_call(
+            "chat.postMessage",
+            channel=channel_id,
+            text=message,
+            attachments=attachments,
+        )
 
     return res["ok"], res.get("ts", "")
 
 
-def update_channel_message(lock: Lock, message: str, unlock: bool = False) -> Tuple[bool, Optional[str]]:
+def update_channel_message(
+    lock: Lock, message: str, unlock: bool = False
+) -> Tuple[bool, Optional[str]]:
     if unlock:
-        res = bot.api_call("chat.update", channel=lock.channel_id, text=message, ts=lock.message_id, attachments=[])
+        res = bot.api_call(
+            "chat.update",
+            channel=lock.channel_id,
+            text=message,
+            ts=lock.message_id,
+            attachments=[],
+        )
     else:
-        res = bot.api_call("chat.update", channel=lock.channel_id, text=message, ts=lock.message_id)
+        res = bot.api_call(
+            "chat.update", channel=lock.channel_id, text=message, ts=lock.message_id
+        )
 
     return res["ok"], lock.message_id

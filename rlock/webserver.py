@@ -46,7 +46,9 @@ def get_request_message(params: list) -> str:
     return " ".join(params[offset:])
 
 
-def try_respond(lock: Lock, message: str, init_lock: bool = False) -> Tuple[Response, str]:
+def try_respond(
+    lock: Lock, message: str, init_lock: bool = False
+) -> Tuple[Response, str]:
     """
     Try to post a message back to the channel.
     If that fails, show message back to the user.
@@ -77,7 +79,11 @@ def extract_request(data: dict) -> Tuple[Lock, list]:
         params = []
 
     try:
-        lock = Lock(channel_id=data["channel_id"], user_id=data["user_id"], expiry_tstamp=get_request_duration(params))
+        lock = Lock(
+            channel_id=data["channel_id"],
+            user_id=data["user_id"],
+            expiry_tstamp=get_request_duration(params),
+        )
     except IndexError:
         raise RuntimeError("invalid request")
 
@@ -101,7 +107,9 @@ def do_lock(new_lock: Lock, lock_time: Optional[int] = None):
     if old_lock and not old_lock.is_expired:
         if old_lock.user_id != new_lock.user_id:
             if old_lock.add_new_subscriber(new_lock.user_id):
-                return PlainTextResponse("Currently locked, I will ping you when the lock will expire.")
+                return PlainTextResponse(
+                    "Currently locked, I will ping you when the lock will expire."
+                )
             else:
                 return PlainTextResponse("Currently locked & ping planned already.")
 
@@ -113,14 +121,18 @@ def do_lock(new_lock: Lock, lock_time: Optional[int] = None):
         new_lock.user_notified = 0
         if set_lock(new_lock):
             new_lock.update_lock_message()
-            response, msg_id = try_respond(new_lock, f"🔐 _LOCK extended_ ({lock_time} mins)")
+            response, msg_id = try_respond(
+                new_lock, f"🔐 _LOCK extended_ ({lock_time} mins)"
+            )
             if msg_id:
                 channel_stats.mark_extend(save=True)
                 react_message(new_lock, msg_id, "classic")
             return response
 
     if set_lock(new_lock):
-        response, msg = try_respond(new_lock, new_lock.get_lock_message(), init_lock=True)
+        response, msg = try_respond(
+            new_lock, new_lock.get_lock_message(), init_lock=True
+        )
         if msg:  # was success
             channel_stats.mark_lock(save=True)
         return response
@@ -171,12 +183,20 @@ async def rdialog(request):
 
     new_lock = get_lock(channel_id)
     if not new_lock:
-        channel_message(channel_id, "chosen lock is not valid anymore", user=request_user)
+        channel_message(
+            channel_id, "chosen lock is not valid anymore", user=request_user
+        )
+        print("first")
         return PlainTextResponse(None, status_code=204)  # no lock exists
 
     if new_lock.user_id != request_user:
-        channel_message(channel_id, "can't interact with non-owned lock", user=request_user)
-        return PlainTextResponse(None, status_code=204)  # cant interact with non-owned lock
+        channel_message(
+            channel_id, "can't interact with non-owned lock", user=request_user
+        )
+        print("second", new_lock.user_id, request_user)
+        return PlainTextResponse(
+            None, status_code=204
+        )  # cant interact with non-owned lock
 
     action = payload["actions"][0]["value"]
     if action.startswith("lock"):
@@ -202,7 +222,9 @@ async def server_error(request, exc):
 def get_extension_timestamp(current_lock: Lock, lock_time: Optional[int] = None) -> int:
     lock_time = lock_time or 30
     if current_lock:
-        planned_expiry = arrow.get(current_lock.expiry_tstamp).shift(minutes=lock_time).timestamp
+        planned_expiry = (
+            arrow.get(current_lock.expiry_tstamp).shift(minutes=lock_time).timestamp
+        )
     else:
         planned_expiry = arrow.now().shift(minutes=lock_time).timestamp
 
@@ -210,4 +232,4 @@ def get_extension_timestamp(current_lock: Lock, lock_time: Optional[int] = None)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=4993)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
